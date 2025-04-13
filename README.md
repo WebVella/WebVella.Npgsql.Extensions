@@ -70,7 +70,7 @@ using( var scope = dbService.CreateTransactionScope() )
 }
 ```
 
-We can use nested TransactionScopes. I that case same connection will be used for all scopes, but new savepoint will be created for each nested transaction scope. If something fales in nested transaction scope or Complete() is not called, it will rollback to the savepoint and code can continue with upper transaction scope.
+You can use nested TransactionScopes. I this case same connection will be used for all scopes, but new savepoint will be created for each nested transaction scope. If something fales in nested transaction scope or Complete() is not called, it will rollback to the savepoint and code can continue with upper transaction scope.
 ```csharp
 using( var scope = dbService.CreateTransactionScope() )
 {
@@ -101,7 +101,7 @@ using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
 }
 ```
 
-We can use nested AdvisoryLockScopes alose, but be advised using multiple keys with advisory locks is not recommended, because it can lead to deadlocks.  
+YOu can use nested AdvisoryLockScopes also, but be advised using multiple keys with advisory locks is not recommended, because it can lead to deadlocks.  
 ```csharp
 const long lockKey = 100;
 using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
