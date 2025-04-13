@@ -23,7 +23,7 @@ The library provides 4 public interfaces:
   
 ### Without dependency injection
 
-####Create an instance of IWvDbService  
+#### Create an instance of IWvDbService  
 
 First case is using directly provided connection string argument  
 ```csharp
@@ -45,7 +45,7 @@ config.Bind(dbServiceConfig);
 
 IWvDbService dbService = new WvDbService(dbServiceConfig);
 ```
-####Create new connection to database. Note no connection open call is needed, the connection is opened automatically during its creation.  
+#### Create new connection to database. Note no connection open call is needed, the connection is opened automatically during its creation.  
 ```csharp
 var config = new ConfigurationBuilder()
 	.SetBasePath(Directory.GetCurrentDirectory())
