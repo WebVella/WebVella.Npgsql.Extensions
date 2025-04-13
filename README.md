@@ -21,9 +21,8 @@ The library provides 4 public interfaces:
 **IWvDbTransactionScope** - transaction scope for npgsql connections, with support of nested transactions usage  
 **IWvDbAdvisoryLockScope** - advisory lock scope for executing sql commands with advisory locks  
   
-Here is a simple example of how to use the the library:  
-  
-First example is how to use library is without dependency injection.
+### Without dependency injection
+
 1. Create an instance of IWvDbService  
 1.1. Using directly provided connection string argument  
 ```csharp
@@ -65,7 +64,7 @@ var command = connection.CreateCommand("SELECT 1;");
 await command.ExecuteNonQueryAsync();
 ```
   
-  
+### With dependency injection
 
 ## License
 This guide explains how to choose the right license for our software, tailored to your specific usage needs. The licensing options include the Community MIT license (free) and Commercial License (not free). [Read more](http://tefter.bg/en/license) about our licenses.
