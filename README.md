@@ -18,8 +18,8 @@ GitHub stars guide developers toward great tools. If you find this project valua
 The library provides 4 public interfaces:  
 IWvDbService - provides simple api for working with npgsql connections, transactions and advisory locks  
 IWvDbConnection - its a npgsql connection wrapper with attached context  
-IWvDbTransactionScope - implements transaction scope for npgsql connections, with support of nested transactions usage  
-IWvDbAdvisoryLockScope - implements advisory lock scope for executing sql commands with advisory locks  
+IWvDbTransactionScope - transaction scope for npgsql connections, with support of nested transactions usage  
+IWvDbAdvisoryLockScope - advisory lock scope for executing sql commands with advisory locks  
   
 Here is a simple example of how to use the the library:  
   
