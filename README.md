@@ -24,7 +24,8 @@ The library provides 4 public interfaces:
 ### Without dependency injection
 
 1. Create an instance of IWvDbService  
-1.1. Using directly provided connection string argument  
+
+1. Variant 1 using directly provided connection string argument  
 ```csharp
 using Microsoft.Extensions.Configuration;
 using WebVella.Npgsql.Extensions;
@@ -32,7 +33,7 @@ using WebVella.Npgsql.Extensions;
 var conString = "Host=localhost;Username=username;Password=password;Database=testdb";
 IWvDbService dbService = new WvDbService(conString);
 ```
-1.2. Using configuration file  
+Variant 2 loading service configuration from configuration file  
 ```csharp
 var config = new ConfigurationBuilder()
 	.SetBasePath(Directory.GetCurrentDirectory())
