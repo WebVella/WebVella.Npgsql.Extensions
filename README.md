@@ -25,7 +25,7 @@ The library provides 4 public interfaces:
 
 1. Create an instance of IWvDbService  
 
-1. Variant 1 using directly provided connection string argument  
+Variant 1 using directly provided connection string argument  
 ```csharp
 using Microsoft.Extensions.Configuration;
 using WebVella.Npgsql.Extensions;
