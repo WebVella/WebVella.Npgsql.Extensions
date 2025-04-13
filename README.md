@@ -1,0 +1,70 @@
+﻿[![Project Homepage](https://img.shields.io/badge/Homepage-blue?style=for-the-badge)](https://tefter.bg)
+[![Dotnet](https://img.shields.io/badge/platform-.NET-blue?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Tefter)
+[![GitHub Repo stars](https://img.shields.io/github/stars/WebVella/WebVella.Tefter?style=for-the-badge)](https://github.com/WebVella/WebVella.Tefter/stargazers)
+[![Nuget version](https://img.shields.io/nuget/v/WebVella.Tefter?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Tefter)
+[![Nuget download](https://img.shields.io/nuget/dt/WebVella.Tefter?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Tefter)
+[![License](https://img.shields.io/badge/LICENSE%20details-Community%20MIT%20and%20professional-green?style=for-the-badge)](https://tefter.bg/en/license/)
+
+## What is WebVella.Npgsql.Extensions?
+Open source library which extends npgsql with seamless and easy use of nested transactions and advisory locks
+
+## How to get it
+You can either clone this repository or get the [Nuget package](https://www.nuget.org/packages/WebVella.Tefter)
+
+## Please help by giving a star
+GitHub stars guide developers toward great tools. If you find this project valuable, please give it a star – it helps the community and takes just a second!⭐
+
+## Getting started
+The library provides 4 public interfaces:
+  `IWvDbService` - provides simple api for working with npgsql connections, transactions and advisory locks
+  `IWvDbConnection` - its a npgsql connection wrapper with attached context
+  `IWvDbTransactionScope` - implements transaction scope for npgsql connections, with support of nested transactions usage
+  `IWvDbAdvisoryLockScope` - implements advisory lock scope for executing sql commands with advisory locks
+
+Here is a simple example of how to use the the library:
+
+First example is how to use library is without dependency injection.
+1. Create an instance of `IWvDbService` 
+1.1. Using directly provided connection string argument
+```csharp
+using Microsoft.Extensions.Configuration;
+using WebVella.Npgsql.Extensions;
+
+IWvDbService dbService = new WvDbService("Host=localhost;Username=username;Password=password;Database=testdb");
+```
+1.2. Using configuration file
+```csharp
+var config = new ConfigurationBuilder()
+	.SetBasePath(Directory.GetCurrentDirectory())
+	.AddJsonFile("appsettings.json")
+	.Build();
+
+var dbServiceConfig = new WvDbServiceConfiguration();
+config.Bind(dbServiceConfig);
+
+IWvDbService dbService = new WvDbService(dbServiceConfig);
+```
+2. Create new connection to database. Note no connection open call is needed, the connection is opened automatically during its creation.
+```csharp
+var config = new ConfigurationBuilder()
+	.SetBasePath(Directory.GetCurrentDirectory())
+	.AddJsonFile("appsettings.json")
+	.Build();
+
+var dbServiceConfig = new WvDbServiceConfiguration();
+config.Bind(dbServiceConfig);
+
+IWvDbService dbService = new WvDbService(dbServiceConfig);
+
+//connection is open on its creation and closed on leaving the scope
+using var connection = dbService.CreateConnection();
+
+//do something with database
+var command = connection.CreateCommand("SELECT 1;");
+await command.ExecuteNonQueryAsync();
+```
+
+
+
+## License
+This guide explains how to choose the right license for our software, tailored to your specific usage needs. The licensing options include the Community MIT license (free) and Commercial License (not free). [Read more](http://tefter.bg/en/license) about our licenses.
