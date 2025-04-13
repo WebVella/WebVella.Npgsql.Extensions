@@ -33,7 +33,7 @@ using WebVella.Npgsql.Extensions;
 var conString = "Host=localhost;Username=username;Password=password;Database=testdb";
 IWvDbService dbService = new WvDbService(conString);
 ```
-Or load service configuration from configuration file  
+or load service configuration from configuration file  
 ```csharp
 var config = new ConfigurationBuilder()
 	.SetBasePath(Directory.GetCurrentDirectory())
@@ -47,16 +47,6 @@ IWvDbService dbService = new WvDbService(dbServiceConfig);
 ```
 #### Create new connection to database. Note no connection open call is needed, the connection is opened automatically during its creation.  
 ```csharp
-var config = new ConfigurationBuilder()
-	.SetBasePath(Directory.GetCurrentDirectory())
-	.AddJsonFile("appsettings.json")
-	.Build();
-
-var dbServiceConfig = new WvDbServiceConfiguration();
-config.Bind(dbServiceConfig);
-
-IWvDbService dbService = new WvDbService(dbServiceConfig);
-
 //connection is open on its creation and closed on leaving the scope
 using var connection = dbService.CreateConnection();
 
@@ -64,6 +54,70 @@ using var connection = dbService.CreateConnection();
 var command = connection.CreateCommand("SELECT 1;");
 await command.ExecuteNonQueryAsync();
 ```
+
+#### TransactionScope  
+
+Here is how simple transaction scope looks like. The connection is opened on its creation and closed on leaving the scope.  
+ 
+```csharp
+using( var scope = dbService.CreateTransactionScope() )
+{
+	var command = scope.Connection.CreateCommand("SELECT 1;");
+	await command.ExecuteNonQueryAsync();
+
+	//complete commits current transaction
+	scope.Complete();
+}
+```
+
+We can use nested TransactionScopes. I that case same connection will be used for all scopes, but new savepoint will be created for each nested transaction scope. If something fales in nested transaction scope or Complete() is not called, it will rollback to the savepoint and code can continue with upper transaction scope.
+```csharp
+using( var scope = dbService.CreateTransactionScope() )
+{
+	//do something with database
+	...
+
+	using( var scope = dbService.CreateTransactionScope() )
+	{
+		//do something with database
+		...
+		scope.Complete();
+	}
+
+	scope.Complete();
+}
+```
+
+#### AdvisoryLockScope  
+
+AdvisoryLockScopes have similar usage as TransactionScopes.
+ 
+```csharp
+const long lockKey = 100;
+using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
+{
+	var command = scope.Connection.CreateCommand("SQL TO UPDATE SOMETHING");
+	await command.ExecuteNonQueryAsync();
+}
+```
+
+We can use nested AdvisoryLockScopes alose, but be advised using multiple keys with advisory locks is not recommended, because it can lead to deadlocks.  
+```csharp
+const long lockKey = 100;
+using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
+{
+	var command = scope.Connection.CreateCommand("SQL TO UPDATE SOMETHING");
+	await command.ExecuteNonQueryAsync();
+
+	const long nestedLockKey = 101;
+	using (var scope = dbService.CreateAdvisoryLockScope(nestedLockKey))
+	{
+		var command = scope.Connection.CreateCommand("SQL TO UPDATE SOMETHING ELSE");
+		await command.ExecuteNonQueryAsync();
+	}
+}
+```
+  
   
 ### With dependency injection
 
