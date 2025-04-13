@@ -1,15 +1,15 @@
-﻿[![Project Homepage](https://img.shields.io/badge/Homepage-blue?style=for-the-badge)](https://tefter.bg)
-[![Dotnet](https://img.shields.io/badge/platform-.NET-blue?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Tefter)
-[![GitHub Repo stars](https://img.shields.io/github/stars/WebVella/WebVella.Tefter?style=for-the-badge)](https://github.com/WebVella/WebVella.Tefter/stargazers)
-[![Nuget version](https://img.shields.io/nuget/v/WebVella.Tefter?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Tefter)
-[![Nuget download](https://img.shields.io/nuget/dt/WebVella.Tefter?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Tefter)
-[![License](https://img.shields.io/badge/LICENSE%20details-Community%20MIT%20and%20professional-green?style=for-the-badge)](https://tefter.bg/en/license/)
+﻿[![Project Homepage](https://img.shields.io/badge/Homepage-blue?style=for-the-badge)](https://github.com/WebVella/WebVella.Npgsql.Extensions)
+[![Dotnet](https://img.shields.io/badge/platform-.NET-blue?style=for-the-badge)](https://github.com/WebVella/WebVella.Npgsql.Extensions)
+[![GitHub Repo stars](https://img.shields.io/github/stars/WebVella/WebVella.Npgsql.Extensions?style=for-the-badge)](https://github.com/WebVella/WebVella.Npgsql.Extensions/stargazers)
+[![Nuget version](https://img.shields.io/nuget/v/WebVella.Npgsql.Extensions?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Npgsql.Extensions/)
+[![Nuget download](https://img.shields.io/nuget/dt/WebVella.Npgsql.Extensions?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Npgsql.Extensions/)
+[![License](https://img.shields.io/badge/LICENSE%20details-Community%20MIT%20and%20professional-green?style=for-the-badge)](https://github.com/WebVella/WebVella.Npgsql.Extensions/blob/main/LICENSE/)
 
 ## What is WebVella.Npgsql.Extensions?
 Open source library which extends npgsql with seamless and easy use of nested transactions and advisory locks
 
 ## How to get it
-You can either clone this repository or get the [Nuget package](https://www.nuget.org/packages/WebVella.Tefter)
+You can either clone this repository or get the [Nuget package](https://www.nuget.org/packages/WebVella.Npgsql.Extensions/)
 
 ## Please help by giving a star
 GitHub stars guide developers toward great tools. If you find this project valuable, please give it a star – it helps the community and takes just a second!⭐
@@ -45,7 +45,29 @@ config.Bind(dbServiceConfig);
 
 IWvDbService dbService = new WvDbService(dbServiceConfig);
 ```
-#### Create new connection to database. Note no connection open call is needed, the connection is opened automatically during its creation.  
+
+### With dependency injection
+
+```csharp
+var config = new ConfigurationBuilder()
+	.SetBasePath(Directory.GetCurrentDirectory())
+	.AddJsonFile("appsettings.json")
+	.Build();
+
+var dbServiceConfig = new WvDbServiceConfiguration();
+config.Bind(dbServiceConfig);
+
+//it will inject necessary dependencies to use dbService
+services.AddWvDbService(dbServiceConfig);
+
+```
+
+
+#### Connection and Command
+
+Note: no connection open call is needed, the connection is opened automatically during its creation.  
+Calling IWvDbConnection.CreateCommand() will create NpogsqlCommand and other npgsql classes can be used for getting or updating data.
+
 ```csharp
 //connection is open on its creation and closed on leaving the scope
 using var connection = dbService.CreateConnection();
@@ -119,7 +141,7 @@ using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
 ```
   
   
-### With dependency injection
+
 
 ## License
-This guide explains how to choose the right license for our software, tailored to your specific usage needs. The licensing options include the Community MIT license (free) and Commercial License (not free). [Read more](http://tefter.bg/en/license) about our licenses.
+This guide explains how to choose the right license for our software, tailored to your specific usage needs. The licensing options include the Community MIT license (free) and Commercial License (not free). [Read more](https://github.com/WebVella/WebVella.Npgsql.Extensions/blob/main/LICENSE) about our licenses.
