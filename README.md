@@ -16,21 +16,22 @@ GitHub stars guide developers toward great tools. If you find this project valua
 
 ## Getting started
 The library provides 4 public interfaces:  
-IWvDbService - provides simple api for working with npgsql connections, transactions and advisory locks  
-IWvDbConnection - its a npgsql connection wrapper with attached context  
-IWvDbTransactionScope - transaction scope for npgsql connections, with support of nested transactions usage  
-IWvDbAdvisoryLockScope - advisory lock scope for executing sql commands with advisory locks  
+**IWvDbService** - provides simple api for working with npgsql connections, transactions and advisory locks  
+**IWvDbConnection** - its a npgsql connection wrapper with attached context  
+**IWvDbTransactionScope** - transaction scope for npgsql connections, with support of nested transactions usage  
+**IWvDbAdvisoryLockScope** - advisory lock scope for executing sql commands with advisory locks  
   
 Here is a simple example of how to use the the library:  
   
-First example is how to use library is without dependency injection.  
+First example is how to use library is without dependency injection.
 1. Create an instance of IWvDbService  
 1.1. Using directly provided connection string argument  
 ```csharp
 using Microsoft.Extensions.Configuration;
 using WebVella.Npgsql.Extensions;
 
-IWvDbService dbService = new WvDbService("Host=localhost;Username=username;Password=password;Database=testdb");
+var conString = "Host=localhost;Username=username;Password=password;Database=testdb";
+IWvDbService dbService = new WvDbService(conString);
 ```
 1.2. Using configuration file  
 ```csharp
