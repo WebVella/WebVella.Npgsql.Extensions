@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35913.81
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebVella.Npgsql.Extensions", "src\WebVella.Npgsql.Extensions\WebVella.Npgsql.Extensions.csproj", "{84584FD4-F144-4E0E-F406-BA33DA8EBC7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebVella.Npgsql.Extensions.UnitTests", "tests\WebVella.Npgsql.Extensions.UnitTests\WebVella.Npgsql.Extensions.UnitTests.csproj", "{525BD9A1-2B5D-4B3E-A44E-06B092F26120}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebVella.Npgsql.Extensions.ConsoleApp", "src\WebVella.Npgsql.Extensions.ConsoleApp\WebVella.Npgsql.Extensions.ConsoleApp.csproj", "{8B925E91-F492-4538-AB4E-45BC48D414A0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{84584FD4-F144-4E0E-F406-BA33DA8EBC7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84584FD4-F144-4E0E-F406-BA33DA8EBC7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84584FD4-F144-4E0E-F406-BA33DA8EBC7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84584FD4-F144-4E0E-F406-BA33DA8EBC7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{525BD9A1-2B5D-4B3E-A44E-06B092F26120}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{525BD9A1-2B5D-4B3E-A44E-06B092F26120}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{525BD9A1-2B5D-4B3E-A44E-06B092F26120}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{525BD9A1-2B5D-4B3E-A44E-06B092F26120}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B925E91-F492-4538-AB4E-45BC48D414A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B925E91-F492-4538-AB4E-45BC48D414A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B925E91-F492-4538-AB4E-45BC48D414A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B925E91-F492-4538-AB4E-45BC48D414A0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CF96F314-FB35-44CB-A172-0D1576F906BF}
+	EndGlobalSection
+EndGlobal

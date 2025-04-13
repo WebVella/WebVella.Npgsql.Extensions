@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+	  <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
+	  <AssemblyName>WebVella.Npgsql.Extensions</AssemblyName>
+	  <OutputType>Library</OutputType>
+	  <PackageId>$(AssemblyName)</PackageId>
+	  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+	  <Description>Minimalistic open source library which extends npgsql with seamless and easy use of nested transactions and advisory locks.</Description>
+	  <Version>1.0.0</Version>
+	  <Authors>WebVella</Authors>
+	  <Company>WebVella</Company>
+	  <Copyright>WebVella 2025</Copyright>
+	  <PackageProjectUrl>https://webvella.com</PackageProjectUrl>
+	  <Icon>https://webvella.com/favicon.ico</Icon>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <RepositoryUrl>https://github.com/WebVella/WebVella.Tefter.git</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <!-- Remove the language litter of code analysis on publish https://github.com/dotnet/roslyn/issues/39458-->
+	  <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+	  <Title>WebVella.Npgsql.Extensions</Title>
+	  <PackageTags>postgres,transactions,transaction scope,nested transactions,advisory lock</PackageTags>
+	  <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.4" />
+    <PackageReference Include="Npgsql" Version="9.0.3" />
+  </ItemGroup>
+
+</Project>
