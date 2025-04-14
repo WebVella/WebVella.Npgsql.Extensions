@@ -129,7 +129,7 @@ using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
 }
 ```
 
-YOu can use nested AdvisoryLockScopes also, but be advised using multiple keys with advisory locks is not recommended, because it can lead to deadlocks.  
+You can use nested AdvisoryLockScopes also, but be advised using multiple keys with advisory locks is not recommended, because it can lead to deadlocks.  
 ```csharp
 const long lockKey = 100;
 using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
@@ -138,9 +138,9 @@ using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
 	await command.ExecuteNonQueryAsync();
 
 	const long nestedLockKey = 101;
-	using (var scope = dbService.CreateAdvisoryLockScope(nestedLockKey))
+	using (var nestedScope = dbService.CreateAdvisoryLockScope(nestedLockKey))
 	{
-		var command = scope.Connection.CreateCommand("SQL TO UPDATE SOMETHING ELSE");
+		var command = nestedScope.Connection.CreateCommand("SQL TO UPDATE SOMETHING ELSE");
 		await command.ExecuteNonQueryAsync();
 	}
 }
