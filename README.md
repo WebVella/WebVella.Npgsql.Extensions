@@ -6,9 +6,9 @@
 [![License](https://img.shields.io/badge/LICENSE%20details-Community%20MIT%20and%20professional-green?style=for-the-badge)](https://github.com/WebVella/WebVella.Npgsql.Extensions/blob/main/LICENSE/)
 
 Checkout our other projects:
-[WebVella ERP](https://github.com/WebVella/WebVella-ERP).
-[Data collaboration - Tefter.bg](https://github.com/WebVella/WebVella.Tefter).
-[Document template generation](https://github.com/WebVella/WebVella.DocumentTemplates).
+[WebVella ERP](https://github.com/WebVella/WebVella-ERP)  
+[Data collaboration - Tefter.bg](https://github.com/WebVella/WebVella.Tefter)  
+[Document template generation](https://github.com/WebVella/WebVella.DocumentTemplates)  
 
 
 ## What is WebVella.Npgsql.Extensions?
