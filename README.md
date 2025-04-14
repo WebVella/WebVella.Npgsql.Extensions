@@ -138,9 +138,9 @@ using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
 	await command.ExecuteNonQueryAsync();
 
 	const long nestedLockKey = 101;
-	using (var scope = dbService.CreateAdvisoryLockScope(nestedLockKey))
+	using (var nestedScope = dbService.CreateAdvisoryLockScope(nestedLockKey))
 	{
-		var command = scope.Connection.CreateCommand("SQL TO UPDATE SOMETHING ELSE");
+		var command = nestedScope.Connection.CreateCommand("SQL TO UPDATE SOMETHING ELSE");
 		await command.ExecuteNonQueryAsync();
 	}
 }
