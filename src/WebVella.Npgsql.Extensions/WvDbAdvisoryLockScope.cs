@@ -1,19 +1,41 @@
 ﻿namespace WebVella.Npgsql.Extensions;
 
+/// <summary>
+/// Represents a scope for managing advisory locks in a database connection.
+/// </summary>
 public interface IWvDbAdvisoryLockScope : IDisposable
 {
+	/// <summary>
+	/// Gets the database connection associated with the advisory lock scope.
+	/// </summary>
 	public IWvDbConnection Connection { get; }
+
+	/// <summary>
+	/// Completes the advisory lock scope by releasing the acquired lock.
+	/// </summary>
 	public void Complete();
 }
 
+/// <summary>
+/// Implements a scope for managing advisory locks in a database connection.
+/// </summary>
 internal class WvDbAdvisoryLockScope : IWvDbAdvisoryLockScope
 {
 	private bool _shouldDispose = true;
 	private WvDbConnectionContext _connectionCtx;
 	private WvDbConnection _connection;
 
+	/// <summary>
+	/// Gets the database connection associated with the advisory lock scope.
+	/// </summary>
 	public IWvDbConnection Connection { get { return _connection; } }
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="WvDbAdvisoryLockScope"/> class.
+	/// Acquires an advisory lock using the specified connection string and lock key.
+	/// </summary>
+	/// <param name="connectionString">The connection string for the database.</param>
+	/// <param name="lockKey">The key used to acquire the advisory lock.</param>
 	internal WvDbAdvisoryLockScope(string connectionString, long lockKey)
 	{
 		_connectionCtx = WvDbConnectionContext.GetCurrentContext();
@@ -40,17 +62,27 @@ internal class WvDbAdvisoryLockScope : IWvDbAdvisoryLockScope
 		_connection.AcquireAdvisoryLock(lockKey);
 	}
 
+	/// <summary>
+	/// Completes the advisory lock scope by releasing the acquired lock.
+	/// </summary>
 	public void Complete()
 	{
 		_connection.ReleaseAdvisoryLock();
 	}
 
+	/// <summary>
+	/// Disposes the resources used by the <see cref="WvDbAdvisoryLockScope"/> instance.
+	/// </summary>
 	public void Dispose()
 	{
 		Dispose(true);
 		GC.SuppressFinalize(this);
 	}
 
+	/// <summary>
+	/// Disposes the resources used by the <see cref="WvDbAdvisoryLockScope"/> instance.
+	/// </summary>
+	/// <param name="disposing">A value indicating whether to dispose managed resources.</param>
 	public void Dispose(bool disposing)
 	{
 		if (disposing)

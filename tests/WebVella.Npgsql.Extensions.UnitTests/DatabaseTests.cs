@@ -1,10 +1,10 @@
 ﻿namespace WebVella.Npgsql.Extensions.UnitTests;
 
-public class Tests
+public class DatabaseTests
 {
 	public TestContext Context { get; }
 
-	public Tests()
+	public DatabaseTests()
 	{
 		Context = new TestContext();
 

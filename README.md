@@ -5,6 +5,12 @@
 [![Nuget download](https://img.shields.io/nuget/dt/WebVella.Npgsql.Extensions?style=for-the-badge)](https://www.nuget.org/packages/WebVella.Npgsql.Extensions/)
 [![License](https://img.shields.io/badge/LICENSE%20details-Community%20MIT%20and%20professional-green?style=for-the-badge)](https://github.com/WebVella/WebVella.Npgsql.Extensions/blob/main/LICENSE/)
 
+Checkout our other projects:
+[WebVella ERP](https://github.com/WebVella/WebVella-ERP).
+[Data collaboration - Tefter.bg](https://github.com/WebVella/WebVella.Tefter).
+[Document template generation](https://github.com/WebVella/WebVella.DocumentTemplates).
+
+
 ## What is WebVella.Npgsql.Extensions?
 Open source library which extends npgsql with seamless and easy use of nested transactions and advisory locks
 
@@ -144,4 +150,4 @@ using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
 
 
 ## License
-This guide explains how to choose the right license for our software, tailored to your specific usage needs. The licensing options include the Community MIT license (free) and Commercial License (not free). [Read more](https://github.com/WebVella/WebVella.Npgsql.Extensions/blob/main/LICENSE) about our licenses.
+[![Library license details](https://img.shields.io/badge/%F0%9F%93%9C%0A%20read-license%20details-blue?style=for-the-badge)](https://github.com/WebVella/WebVella.Npgsql.Extensions/blob/main/LICENSE/)

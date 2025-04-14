@@ -1,18 +1,49 @@
 ﻿namespace WebVella.Npgsql.Extensions;
 
-public interface IWvDbConnection: IDisposable
+/// <summary>
+/// Interface for database connection operations, including transaction management and advisory locks.
+/// </summary>
+public interface IWvDbConnection : IDisposable
 {
+	/// <summary>
+	/// Begins a new transaction or creates a savepoint if a transaction already exists.
+	/// </summary>
 	internal void BeginTransaction();
+
+	/// <summary>
+	/// Commits the current transaction or releases the savepoint if nested.
+	/// </summary>
 	internal void CommitTransaction();
+
+	/// <summary>
+	/// Rolls back the current transaction or reverts to the previous savepoint if nested.
+	/// </summary>
 	internal void RollbackTransaction();
+
+	/// <summary>
+	/// Acquires a PostgreSQL advisory lock using the specified key.
+	/// </summary>
+	/// <param name="key">The key for the advisory lock.</param>
 	internal void AcquireAdvisoryLock(long key);
+
+	/// <summary>
+	/// Releases the currently held PostgreSQL advisory lock.
+	/// </summary>
 	internal void ReleaseAdvisoryLock();
 
-	public NpgsqlCommand CreateCommand(string sql,
-		CommandType commandType = CommandType.Text,
-		params NpgsqlParameter[] parameters);
+	/// <summary>
+	/// Creates a new NpgsqlCommand with the specified SQL, command type, and parameters.
+	/// </summary>
+	/// <param name="sql">The SQL query or command text.</param>
+	/// <param name="commandType">The type of the command (e.g., Text, StoredProcedure).</param>
+	/// <param name="parameters">Optional parameters for the command.</param>
+	/// <returns>A configured NpgsqlCommand instance.</returns>
+	public NpgsqlCommand CreateCommand(string sql, CommandType commandType = CommandType.Text, params NpgsqlParameter[] parameters);
 }
 
+/// <summary>
+/// Implementation of IWvDbConnection for managing PostgreSQL database connections, transactions, and advisory locks.
+/// </summary>
 internal class WvDbConnection : IWvDbConnection
 {
 	private Stack<string> _transactionStack = new Stack<string>();
@@ -20,9 +51,13 @@ internal class WvDbConnection : IWvDbConnection
 	private NpgsqlConnection _connection;
 	private bool _initialTransactionHolder = false;
 	private long? _lockKey = null;
-
 	private WvDbConnectionContext CurrentContext;
 
+	/// <summary>
+	/// Initializes a new instance of WvDbConnection with an existing transaction.
+	/// </summary>
+	/// <param name="transaction">The existing NpgsqlTransaction.</param>
+	/// <param name="connectionContext">The associated connection context.</param>
 	internal WvDbConnection(NpgsqlTransaction transaction, WvDbConnectionContext connectionContext)
 	{
 		CurrentContext = connectionContext;
@@ -30,6 +65,11 @@ internal class WvDbConnection : IWvDbConnection
 		_connection = transaction.Connection;
 	}
 
+	/// <summary>
+	/// Initializes a new instance of WvDbConnection with a connection string.
+	/// </summary>
+	/// <param name="connectionString">The connection string for the database.</param>
+	/// <param name="connectionContext">The associated connection context.</param>
 	internal WvDbConnection(string connectionString, WvDbConnectionContext connectionContext)
 	{
 		CurrentContext = connectionContext;
@@ -38,18 +78,12 @@ internal class WvDbConnection : IWvDbConnection
 		_connection.Open();
 	}
 
-	public NpgsqlCommand CreateCommand(string sql, CommandType commandType = CommandType.Text,
-		NpgsqlParameter[] parameters = null)
+	/// <inheritdoc/>
+	public NpgsqlCommand CreateCommand(string sql, CommandType commandType = CommandType.Text, NpgsqlParameter[] parameters = null)
 	{
-		NpgsqlCommand command = null;
-		if (_transaction != null)
-		{
-			command = new NpgsqlCommand(sql, _connection, _transaction);
-		}
-		else
-		{
-			command = new NpgsqlCommand(sql, _connection);
-		}
+		NpgsqlCommand command = _transaction != null
+			? new NpgsqlCommand(sql, _connection, _transaction)
+			: new NpgsqlCommand(sql, _connection);
 
 		command.CommandType = commandType;
 		if (parameters != null)
@@ -58,6 +92,7 @@ internal class WvDbConnection : IWvDbConnection
 		return command;
 	}
 
+	/// <inheritdoc/>
 	public void AcquireAdvisoryLock(long key)
 	{
 		_lockKey = key;
@@ -70,9 +105,10 @@ internal class WvDbConnection : IWvDbConnection
 		}
 	}
 
+	/// <inheritdoc/>
 	public void ReleaseAdvisoryLock()
 	{
-		if(_lockKey is null)
+		if (_lockKey is null)
 		{
 			throw new Exception("Trying to release advisory lock, but no lock key is set.");
 		}
@@ -85,6 +121,7 @@ internal class WvDbConnection : IWvDbConnection
 		}
 	}
 
+	/// <inheritdoc/>
 	public void BeginTransaction()
 	{
 		if (_transaction == null)
@@ -99,6 +136,7 @@ internal class WvDbConnection : IWvDbConnection
 		_transactionStack.Push(savePointName);
 	}
 
+	/// <inheritdoc/>
 	public void CommitTransaction()
 	{
 		if (_transaction == null)
@@ -108,14 +146,13 @@ internal class WvDbConnection : IWvDbConnection
 
 		var savepointName = _transactionStack.Pop();
 
-		if (_transactionStack.Count() == 0)
+		if (_transactionStack.Count == 0)
 		{
 			CurrentContext.LeaveTransactionalState();
 
 			if (!_initialTransactionHolder)
 			{
 				_transaction.Rollback();
-
 				_transaction = null;
 
 				throw new Exception("Trying to commit transaction started " +
@@ -129,11 +166,10 @@ internal class WvDbConnection : IWvDbConnection
 			{
 				ReleaseAdvisoryLock();
 			}
-
-
 		}
 	}
 
+	/// <inheritdoc/>
 	public void RollbackTransaction()
 	{
 		if (_transaction == null)
@@ -146,9 +182,7 @@ internal class WvDbConnection : IWvDbConnection
 		if (_transactionStack.Count == 0)
 		{
 			_transaction.Rollback();
-
 			CurrentContext.LeaveTransactionalState();
-
 			_transaction = null;
 
 			if (_lockKey.HasValue)
@@ -159,12 +193,15 @@ internal class WvDbConnection : IWvDbConnection
 			if (!_initialTransactionHolder)
 			{
 				throw new Exception("Trying to rollback transaction started " +
-					"from another connection.The transaction is rolled back, " +
+					"from another connection. The transaction is rolled back, " +
 					"but this exception is thrown to notify.");
 			}
 		}
 	}
 
+	/// <summary>
+	/// Closes the database connection and ensures all transactions are properly handled.
+	/// </summary>
 	internal void Close()
 	{
 		if (_transaction != null && _initialTransactionHolder)
@@ -189,12 +226,17 @@ internal class WvDbConnection : IWvDbConnection
 		}
 	}
 
+	/// <inheritdoc/>
 	public void Dispose()
 	{
 		Dispose(true);
 		GC.SuppressFinalize(this);
 	}
 
+	/// <summary>
+	/// Disposes the connection and releases resources.
+	/// </summary>
+	/// <param name="disposing">Indicates whether the method is called from Dispose or a finalizer.</param>
 	public void Dispose(bool disposing)
 	{
 		if (disposing)
