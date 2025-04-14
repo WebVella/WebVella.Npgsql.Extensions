@@ -9,7 +9,7 @@
 	  <PackageId>$(AssemblyName)</PackageId>
 	  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	  <Description>Minimalistic open source library which extends npgsql with seamless and easy use of nested transactions and advisory locks.</Description>
-	  <Version>1.0.0</Version>
+	  <Version>1.0.1</Version>
 	  <Authors>WebVella</Authors>
 	  <Company>WebVella</Company>
 	  <Copyright>WebVella 2025</Copyright>
