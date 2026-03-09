@@ -21,11 +21,11 @@ You can either clone this repository or get the [Nuget package](https://www.nuge
 GitHub stars guide developers toward great tools. If you find this project valuable, please give it a star – it helps the community and takes just a second!⭐
 
 ## Getting started
-The library provides 4 public interfaces:  
+The library provides 4 public interfaces with both sync and async APIs:  
 **IWvDbService** - provides simple api for working with npgsql connections, transactions and advisory locks  
-**IWvDbConnection** - its a npgsql connection wrapper with attached context  
-**IWvDbTransactionScope** - transaction scope for npgsql connections, with support of nested transactions usage  
-**IWvDbAdvisoryLockScope** - advisory lock scope for executing sql commands with advisory locks  
+**IWvDbConnection** - npgsql connection wrapper with attached context (implements `IDisposable` and `IAsyncDisposable`)  
+**IWvDbTransactionScope** - transaction scope for npgsql connections, with support of nested transactions (implements `IDisposable` and `IAsyncDisposable`)  
+**IWvDbAdvisoryLockScope** - advisory lock scope for executing sql commands with advisory locks (implements `IDisposable` and `IAsyncDisposable`)  
   
 ### Without dependency injection
 
@@ -54,6 +54,7 @@ IWvDbService dbService = new WvDbService(dbServiceConfig);
 
 ### With dependency injection
 
+Using configuration object:
 ```csharp
 var config = new ConfigurationBuilder()
 	.SetBasePath(Directory.GetCurrentDirectory())
@@ -65,15 +66,20 @@ config.Bind(dbServiceConfig);
 
 //it will inject necessary dependencies to use dbService
 services.AddWvDbService(dbServiceConfig);
+```
 
+Or directly with a connection string:
+```csharp
+services.AddWvDbService("Host=localhost;Username=username;Password=password;Database=testdb");
 ```
 
 
 #### Connection and Command
 
 Note: no connection open call is needed, the connection is opened automatically during its creation.  
-Calling IWvDbConnection.CreateCommand() will create NpogsqlCommand and other npgsql classes can be used for getting or updating data.
+Calling IWvDbConnection.CreateCommand() will create NpgsqlCommand and other npgsql classes can be used for getting or updating data.
 
+##### Sync
 ```csharp
 //connection is open on its creation and closed on leaving the scope
 using var connection = dbService.CreateConnection();
@@ -83,14 +89,26 @@ var command = connection.CreateCommand("SELECT 1;");
 await command.ExecuteNonQueryAsync();
 ```
 
+##### Async
+```csharp
+//connection is open on its creation and closed on leaving the scope
+await using var connection = await dbService.CreateConnectionAsync();
+
+//do something with database
+var command = connection.CreateCommand("SELECT 1;");
+await command.ExecuteNonQueryAsync();
+```
+
 #### TransactionScope  
 
-Here is how simple transaction scope looks like. The connection is opened on its creation and closed on leaving the scope.  
- 
+Transaction scope wraps database operations in a transaction. The connection is opened on its creation and closed on leaving the scope.  
+If `Complete()` / `CompleteAsync()` is not called before the scope is disposed, all changes are automatically rolled back.
+
+##### Sync
 ```csharp
 using( var scope = dbService.CreateTransactionScope() )
 {
-	var command = scope.Connection.CreateCommand("SELECT 1;");
+	var command = scope.Connection.CreateCommand("INSERT INTO ...");
 	await command.ExecuteNonQueryAsync();
 
 	//complete commits current transaction
@@ -98,38 +116,171 @@ using( var scope = dbService.CreateTransactionScope() )
 }
 ```
 
-You can use nested TransactionScopes. I this case same connection will be used for all scopes, but new savepoint will be created for each nested transaction scope. If something fales in nested transaction scope or Complete() is not called, it will rollback to the savepoint and code can continue with upper transaction scope.
+##### Async
+```csharp
+await using( var scope = await dbService.CreateTransactionScopeAsync() )
+{
+	var command = scope.Connection.CreateCommand("INSERT INTO ...");
+	await command.ExecuteNonQueryAsync();
+
+	//complete commits current transaction
+	await scope.CompleteAsync();
+}
+```
+
+##### Rollback on incomplete scope
+
+If `Complete()` / `CompleteAsync()` is not called, the transaction is rolled back when the scope is disposed.
+
+```csharp
+//sync
+using( var scope = dbService.CreateTransactionScope() )
+{
+	var command = scope.Connection.CreateCommand("INSERT INTO ...");
+	await command.ExecuteNonQueryAsync();
+
+	//not calling scope.Complete() - all changes will be rolled back
+}
+
+//async
+await using( var scope = await dbService.CreateTransactionScopeAsync() )
+{
+	var command = scope.Connection.CreateCommand("INSERT INTO ...");
+	await command.ExecuteNonQueryAsync();
+
+	//not calling scope.CompleteAsync() - all changes will be rolled back
+}
+```
+
+##### Nested TransactionScopes
+
+You can use nested TransactionScopes. In this case the same connection will be used for all scopes, but a new savepoint will be created for each nested transaction scope. If something fails in a nested transaction scope or `Complete()` / `CompleteAsync()` is not called, it will rollback to the savepoint and execution can continue with the outer transaction scope.
+
+Sync:
 ```csharp
 using( var scope = dbService.CreateTransactionScope() )
 {
 	//do something with database
 	...
 
-	using( var scope = dbService.CreateTransactionScope() )
+	using( var nestedScope = dbService.CreateTransactionScope() )
 	{
 		//do something with database
 		...
-		scope.Complete();
+		nestedScope.Complete();
 	}
 
 	scope.Complete();
 }
 ```
 
+Async:
+```csharp
+await using( var scope = await dbService.CreateTransactionScopeAsync() )
+{
+	//do something with database
+	...
+
+	await using( var nestedScope = await dbService.CreateTransactionScopeAsync() )
+	{
+		//do something with database
+		...
+		await nestedScope.CompleteAsync();
+	}
+
+	await scope.CompleteAsync();
+}
+```
+
+##### Nested scopes with partial rollback
+
+When a nested scope is not completed, only the changes made within that scope are rolled back. The outer scope can continue and decide whether to commit or rollback its own changes.
+```csharp
+await using( var scope = await dbService.CreateTransactionScopeAsync() )
+{
+	//insert records - these are part of the outer scope
+	...
+
+	//nested scope that will be committed
+	await using( var nestedScope1 = await dbService.CreateTransactionScopeAsync() )
+	{
+		//insert more records
+		...
+		await nestedScope1.CompleteAsync();
+	}
+	//nestedScope1 changes are preserved
+
+	//nested scope that will be rolled back
+	await using( var nestedScope2 = await dbService.CreateTransactionScopeAsync() )
+	{
+		//insert more records
+		...
+		//not calling CompleteAsync - these changes will be rolled back
+	}
+	//nestedScope2 changes are rolled back, but outer scope and nestedScope1 changes remain
+
+	await scope.CompleteAsync();
+}
+```
+
+##### TransactionScope with advisory lock
+
+You can combine transaction scopes with advisory locks to serialize concurrent access to shared resources. The lock is acquired at the start and released when the transaction completes.
+```csharp
+//sync
+const long lockKey = 100;
+using (var scope = dbService.CreateTransactionScope(lockKey))
+{
+	//read-modify-write is now safe from concurrent access
+	var command = scope.Connection.CreateCommand("SELECT ...");
+	...
+	scope.Complete();
+}
+
+//async
+const long lockKey = 100;
+await using (var scope = await dbService.CreateTransactionScopeAsync(lockKey))
+{
+	//read-modify-write is now safe from concurrent access
+	var command = scope.Connection.CreateCommand("SELECT ...");
+	...
+	await scope.CompleteAsync();
+}
+```
+
 #### AdvisoryLockScope  
 
-AdvisoryLockScopes have similar usage as TransactionScopes.
- 
+AdvisoryLockScopes have similar usage as TransactionScopes. They acquire a PostgreSQL advisory lock, which serializes access across concurrent connections. Call `Complete()` / `CompleteAsync()` to release the lock.
+
+##### Sync
 ```csharp
 const long lockKey = 100;
 using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
 {
 	var command = scope.Connection.CreateCommand("SQL TO UPDATE SOMETHING");
 	await command.ExecuteNonQueryAsync();
+
+	scope.Complete();
 }
 ```
 
+##### Async
+```csharp
+const long lockKey = 100;
+await using (var scope = await dbService.CreateAdvisoryLockScopeAsync(lockKey))
+{
+	var command = scope.Connection.CreateCommand("SQL TO UPDATE SOMETHING");
+	await command.ExecuteNonQueryAsync();
+
+	await scope.CompleteAsync();
+}
+```
+
+##### Nested AdvisoryLockScopes
+
 You can use nested AdvisoryLockScopes also, but be advised using multiple keys with advisory locks is not recommended, because it can lead to deadlocks.  
+
+Sync:
 ```csharp
 const long lockKey = 100;
 using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
@@ -142,7 +293,32 @@ using (var scope = dbService.CreateAdvisoryLockScope(lockKey))
 	{
 		var command = nestedScope.Connection.CreateCommand("SQL TO UPDATE SOMETHING ELSE");
 		await command.ExecuteNonQueryAsync();
+
+		nestedScope.Complete();
 	}
+
+	scope.Complete();
+}
+```
+
+Async:
+```csharp
+const long lockKey = 100;
+await using (var scope = await dbService.CreateAdvisoryLockScopeAsync(lockKey))
+{
+	var command = scope.Connection.CreateCommand("SQL TO UPDATE SOMETHING");
+	await command.ExecuteNonQueryAsync();
+
+	const long nestedLockKey = 101;
+	await using (var nestedScope = await dbService.CreateAdvisoryLockScopeAsync(nestedLockKey))
+	{
+		var command = nestedScope.Connection.CreateCommand("SQL TO UPDATE SOMETHING ELSE");
+		await command.ExecuteNonQueryAsync();
+
+		await nestedScope.CompleteAsync();
+	}
+
+	await scope.CompleteAsync();
 }
 ```
   
