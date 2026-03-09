@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
 	  <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
 	  <AssemblyName>WebVella.Npgsql.Extensions</AssemblyName>
@@ -9,7 +9,7 @@
 	  <PackageId>$(AssemblyName)</PackageId>
 	  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	  <Description>Minimalistic open source library which extends npgsql with seamless and easy use of nested transactions and advisory locks.</Description>
-	  <Version>1.0.2</Version>
+	  <Version>1.1.0</Version>
 	  <Authors>WebVella</Authors>
 	  <Company>WebVella</Company>
 	  <Copyright>WebVella 2025</Copyright>
@@ -38,9 +38,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.4" />
-    <PackageReference Include="Npgsql" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.3" />
+    <PackageReference Include="Npgsql" Version="10.0.1" />
   </ItemGroup>
 
 </Project>
