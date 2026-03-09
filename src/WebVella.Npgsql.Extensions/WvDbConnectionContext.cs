@@ -2,12 +2,13 @@
 /// <summary>
 /// Represents a database connection context for managing connections and transactions.
 /// </summary>
-internal class WvDbConnectionContext : IDisposable
+internal class WvDbConnectionContext : IDisposable, IAsyncDisposable
 {
 	private static AsyncLocal<string> _currentCtxId = new AsyncLocal<string>();
 	private static ConcurrentDictionary<string, WvDbConnectionContext> _contextDict =
 		new ConcurrentDictionary<string, WvDbConnectionContext>();
 
+	private bool _disposed = false;
 	internal Stack<WvDbConnection> _connectionStack;
 	internal NpgsqlTransaction _transaction;
 	internal string _connectionString;
@@ -41,6 +42,24 @@ internal class WvDbConnectionContext : IDisposable
 	}
 
 	/// <summary>
+	/// Asynchronously creates a new database connection within the current context.
+	/// </summary>
+	/// <returns>A new instance of <see cref="WvDbConnection"/>.</returns>
+	internal async Task<WvDbConnection> CreateConnectionAsync()
+	{
+		WvDbConnection con = null;
+
+		if (_transaction != null)
+			con = new WvDbConnection(_transaction, this);
+		else
+			con = await WvDbConnection.CreateAsync(_connectionString, this);
+
+		_connectionStack.Push(con);
+
+		return con;
+	}
+
+	/// <summary>
 	/// Closes the specified database connection.
 	/// </summary>
 	/// <param name="connection">The connection to close.</param>
@@ -50,7 +69,7 @@ internal class WvDbConnectionContext : IDisposable
 	{
 		if (connection != _connectionStack.Peek())
 		{
-			throw new Exception("Connection is closed or trying to" +
+			throw new InvalidOperationException("Connection is closed or trying to" +
 				" close connection, before closing inner connections.");
 		}
 
@@ -90,14 +109,14 @@ internal class WvDbConnectionContext : IDisposable
 				_currentCtxId.Value,
 				new WvDbConnectionContext(connectionString)))
 		{
-			throw new Exception("Cannot create new connection context");
+			throw new InvalidOperationException("Cannot create new connection context");
 		}
 
 		if (!_contextDict.TryGetValue(
 				_currentCtxId.Value,
 				out WvDbConnectionContext ctx))
 		{
-			throw new Exception("Failed to get the connection context");
+			throw new InvalidOperationException("Failed to get the connection context");
 		}
 
 		return ctx;
@@ -133,7 +152,7 @@ internal class WvDbConnectionContext : IDisposable
 		if (currentCtx != null && currentCtx._transaction != null)
 		{
 			currentCtx._transaction.Rollback();
-			throw new Exception("Trying to release connection context in " +
+			throw new InvalidOperationException("Trying to release connection context in " +
 				"transactional state. There is open transaction in created connections.");
 		}
 
@@ -159,6 +178,42 @@ internal class WvDbConnectionContext : IDisposable
 	}
 
 	/// <summary>
+	/// Asynchronously closes the current connection context, rolling back any active transactions.
+	/// </summary>
+	/// <exception cref="InvalidOperationException">Thrown if there is an open transaction when attempting to close the context.</exception>
+	internal static async Task CloseConnectionContextAsync()
+	{
+		var currentCtx = GetCurrentContext();
+
+		if (currentCtx != null && currentCtx._transaction != null)
+		{
+			await currentCtx._transaction.RollbackAsync();
+			throw new InvalidOperationException("Trying to release connection context in " +
+				"transactional state. There is open transaction in created connections.");
+		}
+
+		string idValue = null;
+
+		if (_currentCtxId != null &&
+			!string.IsNullOrWhiteSpace(_currentCtxId.Value))
+		{
+			idValue = _currentCtxId.Value;
+		}
+
+		if (!string.IsNullOrWhiteSpace(idValue))
+		{
+			_contextDict.TryRemove(idValue, out WvDbConnectionContext ctx);
+
+			if (ctx != null)
+			{
+				await ctx.DisposeAsync();
+			}
+
+			_currentCtxId.Value = null;
+		}
+	}
+
+	/// <summary>
 	/// Releases all resources used by the <see cref="WvDbConnectionContext"/>.
 	/// </summary>
 	public void Dispose()
@@ -171,11 +226,30 @@ internal class WvDbConnectionContext : IDisposable
 	/// Releases the unmanaged and optionally managed resources used by the <see cref="WvDbConnectionContext"/>.
 	/// </summary>
 	/// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-	public void Dispose(bool disposing)
+	private void Dispose(bool disposing)
 	{
+		if (_disposed)
+			return;
+
+		_disposed = true;
+
 		if (disposing)
 		{
 			CloseConnectionContext();
 		}
+	}
+
+	/// <summary>
+	/// Asynchronously releases all resources used by the <see cref="WvDbConnectionContext"/>.
+	/// </summary>
+	public async ValueTask DisposeAsync()
+	{
+		if (_disposed)
+			return;
+
+		_disposed = true;
+
+		await CloseConnectionContextAsync();
+		GC.SuppressFinalize(this);
 	}
 }

@@ -1,5 +1,6 @@
 ﻿namespace WebVella.Npgsql.Extensions.UnitTests;
 
+[Collection("Database")]
 public class DatabaseTests
 {
 	public TestContext Context { get; }
@@ -30,7 +31,7 @@ public class DatabaseTests
 	}
 
 	[Fact]
-	public async Task CRUDRepoOperationsWithoutTransactionScope()
+	public async Task Connection_CRUDOperations_ShouldSucceed()
 	{
 		IWvDbService dbService = Context.Services.GetService<IWvDbService>();
 		SampleRepositoryService repoService = Context.Services.GetService<SampleRepositoryService>();
@@ -70,7 +71,7 @@ public class DatabaseTests
 	}
 
 	[Fact]
-	public async Task RepoOperationsWithinTransactionScope()
+	public async Task TransactionScope_WithComplete_ShouldCommitRecords()
 	{
 		IWvDbService dbService = Context.Services.GetService<IWvDbService>();
 		SampleRepositoryService repoService = Context.Services.GetService<SampleRepositoryService>();
@@ -101,7 +102,7 @@ public class DatabaseTests
 	}
 
 	[Fact]
-	public async Task RepoOperationsWithinTransactionScopeWithoutComplete()
+	public async Task TransactionScope_WithoutComplete_ShouldRollbackRecords()
 	{
 		IWvDbService dbService = Context.Services.GetService<IWvDbService>();
 		SampleRepositoryService repoService = Context.Services.GetService<SampleRepositoryService>();
@@ -134,7 +135,7 @@ public class DatabaseTests
 	}
 
 	[Fact]
-	public async Task RepoOperationsWithNestedTransactionScope()
+	public async Task TransactionScope_NestedWithMixedComplete_ShouldRollbackAndCommitCorrectly()
 	{
 		IWvDbService dbService = Context.Services.GetService<IWvDbService>();
 		SampleRepositoryService repoService = Context.Services.GetService<SampleRepositoryService>();
@@ -207,7 +208,7 @@ public class DatabaseTests
 	}
 
 	[Fact]
-	public async Task RepoOperationsWithAdvisoryLock()
+	public async Task AdvisoryLockScope_ConcurrentOperations_ShouldSerializeAccess()
 	{
 		IWvDbService dbService = Context.Services.GetService<IWvDbService>();
 		AccountRepositoryService repoService = Context.Services.GetService<AccountRepositoryService>();
@@ -266,7 +267,7 @@ public class DatabaseTests
 	}
 
 	[Fact]
-	public async Task RepoOperationsWithTransactionScopeAndAdvisoryKey()
+	public async Task TransactionScope_ConcurrentWithAdvisoryKey_ShouldSerializeAccess()
 	{
 		IWvDbService dbService = Context.Services.GetService<IWvDbService>();
 		AccountRepositoryService repoService = Context.Services.GetService<AccountRepositoryService>();
@@ -325,7 +326,7 @@ public class DatabaseTests
 	}
 
 	[Fact]
-	public async Task RepoOperationsWithTransactionScopeWithoutAdvisoryKey()
+	public async Task TransactionScope_ConcurrentWithoutAdvisoryKey_ShouldAllowRaceCondition()
 	{
 		IWvDbService dbService = Context.Services.GetService<IWvDbService>();
 		AccountRepositoryService repoService = Context.Services.GetService<AccountRepositoryService>();

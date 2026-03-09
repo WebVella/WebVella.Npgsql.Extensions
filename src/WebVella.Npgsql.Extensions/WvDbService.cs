@@ -24,6 +24,26 @@ public interface IWvDbService
 	/// <param name="lockKey">The lock key for the advisory lock.</param>
 	/// <returns>An instance of <see cref="IWvDbAdvisoryLockScope"/>.</returns>
 	IWvDbAdvisoryLockScope CreateAdvisoryLockScope(long lockKey);
+
+	/// <summary>
+	/// Asynchronously creates a new database connection.
+	/// </summary>
+	/// <returns>An instance of <see cref="IWvDbConnection"/>.</returns>
+	Task<IWvDbConnection> CreateConnectionAsync();
+
+	/// <summary>
+	/// Asynchronously creates a new transaction scope.
+	/// </summary>
+	/// <param name="lockKey">Optional lock key for advisory locking.</param>
+	/// <returns>An instance of <see cref="IWvDbTransactionScope"/>.</returns>
+	Task<IWvDbTransactionScope> CreateTransactionScopeAsync(long? lockKey = null);
+
+	/// <summary>
+	/// Asynchronously creates a new advisory lock scope.
+	/// </summary>
+	/// <param name="lockKey">The lock key for the advisory lock.</param>
+	/// <returns>An instance of <see cref="IWvDbAdvisoryLockScope"/>.</returns>
+	Task<IWvDbAdvisoryLockScope> CreateAdvisoryLockScopeAsync(long lockKey);
 }
 
 /// <summary>
@@ -57,7 +77,7 @@ public class WvDbService : IWvDbService
 	public WvDbService(string connectionString)
 	{
 		if (string.IsNullOrWhiteSpace(connectionString))
-			throw new ArgumentNullException(connectionString);
+			throw new ArgumentNullException(nameof(connectionString));
 
 		ConnectionString = connectionString;
 	}
@@ -96,5 +116,87 @@ public class WvDbService : IWvDbService
 	public IWvDbAdvisoryLockScope CreateAdvisoryLockScope(long lockKey)
 	{
 		return new WvDbAdvisoryLockScope(ConnectionString, lockKey);
+	}
+
+	/// <summary>
+	/// Asynchronously creates a new database connection.
+	/// </summary>
+	/// <returns>An instance of <see cref="IWvDbConnection"/>.</returns>
+	public Task<IWvDbConnection> CreateConnectionAsync()
+	{
+		var currentCtx = WvDbConnectionContext.GetCurrentContext();
+
+		if (currentCtx is null)
+		{
+			currentCtx = WvDbConnectionContext.CreateContext(ConnectionString);
+		}
+
+		return CreateConnectionCoreAsync(currentCtx);
+	}
+
+	private static async Task<IWvDbConnection> CreateConnectionCoreAsync(WvDbConnectionContext connectionCtx)
+	{
+		return await connectionCtx.CreateConnectionAsync();
+	}
+
+	/// <summary>
+	/// Asynchronously creates a new transaction scope.
+	/// </summary>
+	/// <param name="lockKey">Optional lock key for advisory locking.</param>
+	/// <returns>An instance of <see cref="IWvDbTransactionScope"/>.</returns>
+	public Task<IWvDbTransactionScope> CreateTransactionScopeAsync(long? lockKey = null)
+	{
+		// Resolve or create the connection context synchronously (not in an async method)
+		// so that the AsyncLocal context ID is set in the caller's execution context
+		// and is visible to subsequent calls within the scope.
+		var currentCtx = WvDbConnectionContext.GetCurrentContext();
+		bool shouldDispose;
+
+		if (currentCtx != null)
+		{
+			shouldDispose = false;
+		}
+		else
+		{
+			currentCtx = WvDbConnectionContext.CreateContext(ConnectionString);
+			shouldDispose = true;
+		}
+
+		return CreateTransactionScopeCoreAsync(currentCtx, shouldDispose, lockKey);
+	}
+
+	private static async Task<IWvDbTransactionScope> CreateTransactionScopeCoreAsync(
+		WvDbConnectionContext connectionCtx, bool shouldDispose, long? lockKey)
+	{
+		return await WvDbTransactionScope.CreateAsync(connectionCtx, shouldDispose, lockKey);
+	}
+
+	/// <summary>
+	/// Asynchronously creates a new advisory lock scope.
+	/// </summary>
+	/// <param name="lockKey">The lock key for the advisory lock.</param>
+	/// <returns>An instance of <see cref="IWvDbAdvisoryLockScope"/>.</returns>
+	public Task<IWvDbAdvisoryLockScope> CreateAdvisoryLockScopeAsync(long lockKey)
+	{
+		var currentCtx = WvDbConnectionContext.GetCurrentContext();
+		bool shouldDispose;
+
+		if (currentCtx != null)
+		{
+			shouldDispose = false;
+		}
+		else
+		{
+			currentCtx = WvDbConnectionContext.CreateContext(ConnectionString);
+			shouldDispose = true;
+		}
+
+		return CreateAdvisoryLockScopeCoreAsync(currentCtx, shouldDispose, lockKey);
+	}
+
+	private static async Task<IWvDbAdvisoryLockScope> CreateAdvisoryLockScopeCoreAsync(
+		WvDbConnectionContext connectionCtx, bool shouldDispose, long lockKey)
+	{
+		return await WvDbAdvisoryLockScope.CreateAsync(connectionCtx, shouldDispose, lockKey);
 	}
 }

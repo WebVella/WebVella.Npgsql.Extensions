@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents a transaction scope for database operations.
 /// </summary>
-public interface IWvDbTransactionScope : IDisposable
+public interface IWvDbTransactionScope : IDisposable, IAsyncDisposable
 {
 	/// <summary>
 	/// Gets the database connection associated with the transaction scope.
@@ -15,6 +15,12 @@ public interface IWvDbTransactionScope : IDisposable
 	/// </summary>
 	/// <exception cref="Exception">Thrown if the transaction scope is already completed.</exception>
 	public void Complete();
+
+	/// <summary>
+	/// Asynchronously marks the transaction as successfully completed.
+	/// </summary>
+	/// <exception cref="InvalidOperationException">Thrown if the transaction scope is already completed.</exception>
+	public Task CompleteAsync();
 }
 
 /// <summary>
@@ -31,6 +37,53 @@ internal class WvDbTransactionScope : IWvDbTransactionScope
 	/// Gets the database connection associated with the transaction scope.
 	/// </summary>
 	public IWvDbConnection Connection { get { return _connection; } }
+
+	/// <summary>
+	/// Private constructor for async factory usage.
+	/// </summary>
+	private WvDbTransactionScope() { }
+
+	/// <summary>
+	/// Asynchronously creates a new instance of the <see cref="WvDbTransactionScope"/> class.
+	/// The caller must ensure that <see cref="WvDbConnectionContext"/> is created synchronously
+	/// before calling this method, so that the <see cref="AsyncLocal{T}"/> context ID is set
+	/// in the caller's execution context.
+	/// </summary>
+	/// <param name="connectionCtx">The pre-resolved or pre-created connection context.</param>
+	/// <param name="shouldDispose">Whether this scope should dispose the connection and context.</param>
+	/// <param name="lockKey">An optional advisory lock key.</param>
+	/// <returns>A configured WvDbTransactionScope instance.</returns>
+	internal static async Task<WvDbTransactionScope> CreateAsync(WvDbConnectionContext connectionCtx, bool shouldDispose, long? lockKey = null)
+	{
+		var scope = new WvDbTransactionScope();
+		scope._connectionCtx = connectionCtx;
+		scope._shouldDispose = shouldDispose;
+
+		if (!shouldDispose)
+		{
+			if (scope._connectionCtx._connectionStack.Count > 0)
+			{
+				scope._connection = scope._connectionCtx._connectionStack.Peek();
+			}
+			else
+			{
+				scope._connection = await scope._connectionCtx.CreateConnectionAsync();
+			}
+		}
+		else
+		{
+			scope._connection = await scope._connectionCtx.CreateConnectionAsync();
+		}
+
+		await scope._connection.BeginTransactionAsync();
+
+		if (lockKey.HasValue)
+		{
+			await scope._connection.AcquireAdvisoryLockAsync(lockKey.Value);
+		}
+
+		return scope;
+	}
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="WvDbTransactionScope"/> class.
@@ -76,10 +129,26 @@ internal class WvDbTransactionScope : IWvDbTransactionScope
 	{
 		if (_isCompleted)
 		{
-			throw new Exception("TransactionScope is already completed.");
+			throw new InvalidOperationException("TransactionScope is already completed.");
 		}
 
 		_connection.CommitTransaction();
+
+		_isCompleted = true;
+	}
+
+	/// <summary>
+	/// Asynchronously marks the transaction as successfully completed.
+	/// </summary>
+	/// <exception cref="InvalidOperationException">Thrown if the transaction scope is already completed.</exception>
+	public async Task CompleteAsync()
+	{
+		if (_isCompleted)
+		{
+			throw new InvalidOperationException("TransactionScope is already completed.");
+		}
+
+		await _connection.CommitTransactionAsync();
 
 		_isCompleted = true;
 	}
@@ -97,7 +166,7 @@ internal class WvDbTransactionScope : IWvDbTransactionScope
 	/// Releases the resources used by the transaction scope.
 	/// </summary>
 	/// <param name="disposing">A value indicating whether to release managed resources.</param>
-	public void Dispose(bool disposing)
+	private void Dispose(bool disposing)
 	{
 		if (disposing)
 		{
@@ -115,5 +184,27 @@ internal class WvDbTransactionScope : IWvDbTransactionScope
 				_connectionCtx = null;
 			}
 		}
+	}
+
+	/// <summary>
+	/// Asynchronously releases the resources used by the transaction scope.
+	/// </summary>
+	public async ValueTask DisposeAsync()
+	{
+		if (!_isCompleted)
+		{
+			await _connection.RollbackTransactionAsync();
+		}
+
+		if (_shouldDispose)
+		{
+			await _connection.DisposeAsync();
+			_connection = null;
+
+			await _connectionCtx.DisposeAsync();
+			_connectionCtx = null;
+		}
+
+		GC.SuppressFinalize(this);
 	}
 }

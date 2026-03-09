@@ -50,4 +50,24 @@ public class WvDbServiceTests
 		// Assert
 		act.Should().Throw<ArgumentNullException>();
 	}
+
+	[Fact]
+	public void Constructor_WithEmptyConnectionString_ShouldThrowArgumentNullException()
+	{
+		// Act
+		Action act = () => new WvDbService(string.Empty);
+
+		// Assert
+		act.Should().Throw<ArgumentNullException>();
+	}
+
+	[Fact]
+	public void Constructor_WithWhitespaceConnectionString_ShouldThrowArgumentNullException()
+	{
+		// Act
+		Action act = () => new WvDbService("   ");
+
+		// Assert
+		act.Should().Throw<ArgumentNullException>();
+	}
 }
