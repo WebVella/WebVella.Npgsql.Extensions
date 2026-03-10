@@ -72,47 +72,47 @@ public interface IWvDbConnection : IDisposable, IAsyncDisposable
 /// </summary>
 internal class WvDbConnection : IWvDbConnection
 {
-	private Stack<string> _transactionStack = new Stack<string>();
-	private NpgsqlTransaction _transaction;
-	private NpgsqlConnection _connection;
-	private bool _initialTransactionHolder = false;
-	private bool _disposed = false;
-	private long? _lockKey = null;
-	private WvDbConnectionContext CurrentContext;
+    private Stack<string> _transactionStack = new Stack<string>();
+    private NpgsqlTransaction _transaction;
+    private NpgsqlConnection _connection;
+    private bool _initialTransactionHolder = false;
+    private bool _disposed = false;
+    private long? _lockKey = null;
+    private WvDbConnectionContext _currentContext;
 
 	/// <summary>
 	/// Initializes a new instance of WvDbConnection with an existing transaction.
 	/// </summary>
 	/// <param name="transaction">The existing NpgsqlTransaction.</param>
 	/// <param name="connectionContext">The associated connection context.</param>
-	internal WvDbConnection(NpgsqlTransaction transaction, WvDbConnectionContext connectionContext)
-	{
-		CurrentContext = connectionContext;
-		this._transaction = transaction;
-		_connection = transaction.Connection;
-	}
+    internal WvDbConnection(NpgsqlTransaction transaction, WvDbConnectionContext connectionContext)
+    {
+        _currentContext = connectionContext;
+        _transaction = transaction;
+        _connection = transaction.Connection;
+    }
 
 	/// <summary>
 	/// Initializes a new instance of WvDbConnection with a connection string.
 	/// </summary>
 	/// <param name="connectionString">The connection string for the database.</param>
 	/// <param name="connectionContext">The associated connection context.</param>
-	internal WvDbConnection(string connectionString, WvDbConnectionContext connectionContext)
-	{
-		CurrentContext = connectionContext;
-		_transaction = null;
-		_connection = new NpgsqlConnection(connectionString);
-		_connection.Open();
-	}
+    internal WvDbConnection(string connectionString, WvDbConnectionContext connectionContext)
+    {
+        _currentContext = connectionContext;
+        _transaction = null;
+        _connection = new NpgsqlConnection(connectionString);
+        _connection.Open();
+    }
 
 	/// <summary>
 	/// Private constructor for async factory usage.
 	/// </summary>
 	/// <param name="connectionContext">The associated connection context.</param>
-	private WvDbConnection(WvDbConnectionContext connectionContext)
-	{
-		CurrentContext = connectionContext;
-	}
+    private WvDbConnection(WvDbConnectionContext connectionContext)
+    {
+        _currentContext = connectionContext;
+    }
 
 	/// <summary>
 	/// Asynchronously creates a new instance of WvDbConnection with a connection string.
@@ -205,205 +205,205 @@ internal class WvDbConnection : IWvDbConnection
 	}
 
 	/// <inheritdoc/>
-	public void BeginTransaction()
-	{
-		if (_transaction == null)
-		{
-			_initialTransactionHolder = true;
-			_transaction = _connection.BeginTransaction();
-			CurrentContext.EnterTransactionalState(_transaction);
-		}
+    public void BeginTransaction()
+    {
+        if (_transaction == null)
+        {
+            _initialTransactionHolder = true;
+            _transaction = _connection.BeginTransaction();
+            _currentContext.EnterTransactionalState(_transaction);
+        }
 
-		string savePointName = "tr_" + (Guid.NewGuid().ToString().Replace("-", ""));
-		_transaction.Save(savePointName);
-		_transactionStack.Push(savePointName);
-	}
-
-	/// <inheritdoc/>
-	public async Task BeginTransactionAsync()
-	{
-		if (_transaction == null)
-		{
-			_initialTransactionHolder = true;
-			_transaction = await _connection.BeginTransactionAsync();
-			CurrentContext.EnterTransactionalState(_transaction);
-		}
-
-		string savePointName = "tr_" + (Guid.NewGuid().ToString().Replace("-", ""));
-		using (var cmd = new NpgsqlCommand($"SAVEPOINT \"{savePointName}\"", _connection, _transaction))
-			await cmd.ExecuteNonQueryAsync();
-		_transactionStack.Push(savePointName);
-	}
+        string savePointName = "tr_" + (Guid.NewGuid().ToString().Replace("-", ""));
+        _transaction.Save(savePointName);
+        _transactionStack.Push(savePointName);
+    }
 
 	/// <inheritdoc/>
-	public void CommitTransaction()
-	{
-		if (_transaction == null)
-		{
-			throw new InvalidOperationException("Trying to commit non existent transaction.");
-		}
+    public async Task BeginTransactionAsync()
+    {
+        if (_transaction == null)
+        {
+            _initialTransactionHolder = true;
+            _transaction = await _connection.BeginTransactionAsync();
+            _currentContext.EnterTransactionalState(_transaction);
+        }
 
-		var savepointName = _transactionStack.Pop();
-
-		if (_transactionStack.Count == 0)
-		{
-			CurrentContext.LeaveTransactionalState();
-
-			if (!_initialTransactionHolder)
-			{
-				_transaction.Rollback();
-				_transaction = null;
-
-				throw new InvalidOperationException("Trying to commit transaction started " +
-					"from another connection. The transaction is rolled back.");
-			}
-
-			_transaction.Commit();
-			_transaction = null;
-
-			if (_lockKey.HasValue)
-			{
-				ReleaseAdvisoryLock();
-			}
-		}
-		else
-		{
-			_transaction.Release(savepointName);
-		}
-	}
+        string savePointName = "tr_" + (Guid.NewGuid().ToString().Replace("-", ""));
+        using (var cmd = new NpgsqlCommand($"SAVEPOINT \"{savePointName}\"", _connection, _transaction))
+            await cmd.ExecuteNonQueryAsync();
+        _transactionStack.Push(savePointName);
+    }
 
 	/// <inheritdoc/>
-	public async Task CommitTransactionAsync()
-	{
-		if (_transaction == null)
-		{
-			throw new InvalidOperationException("Trying to commit non existent transaction.");
-		}
+    public void CommitTransaction()
+    {
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("Trying to commit non existent transaction.");
+        }
 
-		var savepointName = _transactionStack.Pop();
+        var savepointName = _transactionStack.Pop();
 
-		if (_transactionStack.Count == 0)
-		{
-			CurrentContext.LeaveTransactionalState();
+        if (_transactionStack.Count == 0)
+        {
+            _currentContext.LeaveTransactionalState();
 
-			if (!_initialTransactionHolder)
-			{
-				await _transaction.RollbackAsync();
-				_transaction = null;
+            if (!_initialTransactionHolder)
+            {
+                _transaction.Rollback();
+                _transaction = null;
 
-				throw new InvalidOperationException("Trying to commit transaction started " +
-					"from another connection. The transaction is rolled back.");
-			}
+                throw new InvalidOperationException("Trying to commit transaction started " +
+                    "from another connection. The transaction is rolled back.");
+            }
 
-			await _transaction.CommitAsync();
-			_transaction = null;
+            _transaction.Commit();
+            _transaction = null;
 
-			if (_lockKey.HasValue)
-			{
-				await ReleaseAdvisoryLockAsync();
-			}
-		}
-		else
-		{
-			using (var cmd = new NpgsqlCommand($"RELEASE SAVEPOINT \"{savepointName}\"", _connection, _transaction))
-				await cmd.ExecuteNonQueryAsync();
-		}
-	}
-
-	/// <inheritdoc/>
-	public void RollbackTransaction()
-	{
-		if (_transaction == null)
-		{
-			throw new InvalidOperationException("Trying to rollback non existent transaction.");
-		}
-
-		_transaction.Rollback(_transactionStack.Pop());
-
-		if (_transactionStack.Count == 0)
-		{
-			_transaction.Rollback();
-			CurrentContext.LeaveTransactionalState();
-			_transaction = null;
-
-			if (_lockKey.HasValue)
-			{
-				ReleaseAdvisoryLock();
-			}
-
-			if (!_initialTransactionHolder)
-			{
-				throw new InvalidOperationException("Trying to rollback transaction started " +
-					"from another connection. The transaction is rolled back, " +
-					"but this exception is thrown to notify.");
-			}
-		}
-	}
+            if (_lockKey.HasValue)
+            {
+                ReleaseAdvisoryLock();
+            }
+        }
+        else
+        {
+            _transaction.Release(savepointName);
+        }
+    }
 
 	/// <inheritdoc/>
-	public async Task RollbackTransactionAsync()
-	{
-		if (_transaction == null)
-		{
-			throw new InvalidOperationException("Trying to rollback non existent transaction.");
-		}
+    public async Task CommitTransactionAsync()
+    {
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("Trying to commit non existent transaction.");
+        }
 
-		var savepointName = _transactionStack.Pop();
+        var savepointName = _transactionStack.Pop();
 
-		using (var cmd = new NpgsqlCommand($"ROLLBACK TO SAVEPOINT \"{savepointName}\"", _connection, _transaction))
-			await cmd.ExecuteNonQueryAsync();
+        if (_transactionStack.Count == 0)
+        {
+            _currentContext.LeaveTransactionalState();
 
-		if (_transactionStack.Count == 0)
-		{
-			await _transaction.RollbackAsync();
-			CurrentContext.LeaveTransactionalState();
-			_transaction = null;
+            if (!_initialTransactionHolder)
+            {
+                await _transaction.RollbackAsync();
+                _transaction = null;
 
-			if (_lockKey.HasValue)
-			{
-				await ReleaseAdvisoryLockAsync();
-			}
+                throw new InvalidOperationException("Trying to commit transaction started " +
+                    "from another connection. The transaction is rolled back.");
+            }
 
-			if (!_initialTransactionHolder)
-			{
-				throw new InvalidOperationException("Trying to rollback transaction started " +
-					"from another connection. The transaction is rolled back, " +
-					"but this exception is thrown to notify.");
-			}
-		}
-	}
+            await _transaction.CommitAsync();
+            _transaction = null;
+
+            if (_lockKey.HasValue)
+            {
+                await ReleaseAdvisoryLockAsync();
+            }
+        }
+        else
+        {
+            using (var cmd = new NpgsqlCommand($"RELEASE SAVEPOINT \"{savepointName}\"", _connection, _transaction))
+                await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
+	/// <inheritdoc/>
+    public void RollbackTransaction()
+    {
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("Trying to rollback non existent transaction.");
+        }
+
+        _transaction.Rollback(_transactionStack.Pop());
+
+        if (_transactionStack.Count == 0)
+        {
+            _transaction.Rollback();
+            _currentContext.LeaveTransactionalState();
+            _transaction = null;
+
+            if (_lockKey.HasValue)
+            {
+                ReleaseAdvisoryLock();
+            }
+
+            if (!_initialTransactionHolder)
+            {
+                throw new InvalidOperationException("Trying to rollback transaction started " +
+                    "from another connection. The transaction is rolled back, " +
+                    "but this exception is thrown to notify.");
+            }
+        }
+    }
+
+	/// <inheritdoc/>
+    public async Task RollbackTransactionAsync()
+    {
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("Trying to rollback non existent transaction.");
+        }
+
+        var savepointName = _transactionStack.Pop();
+
+        using (var cmd = new NpgsqlCommand($"ROLLBACK TO SAVEPOINT \"{savepointName}\"", _connection, _transaction))
+            await cmd.ExecuteNonQueryAsync();
+
+        if (_transactionStack.Count == 0)
+        {
+            await _transaction.RollbackAsync();
+            _currentContext.LeaveTransactionalState();
+            _transaction = null;
+
+            if (_lockKey.HasValue)
+            {
+                await ReleaseAdvisoryLockAsync();
+            }
+
+            if (!_initialTransactionHolder)
+            {
+                throw new InvalidOperationException("Trying to rollback transaction started " +
+                    "from another connection. The transaction is rolled back, " +
+                    "but this exception is thrown to notify.");
+            }
+        }
+    }
 
 	/// <summary>
 	/// Closes the database connection and ensures all transactions are properly handled.
 	/// </summary>
-	internal void Close()
-	{
-		try
-		{
-			if (_transaction != null && _initialTransactionHolder)
-			{
-				_transaction.Rollback();
+    internal void Close()
+    {
+        try
+        {
+            if (_transaction != null && _initialTransactionHolder)
+            {
+                _transaction.Rollback();
 
-				throw new InvalidOperationException("Trying to close connection with " +
-					"pending transaction. The transaction is rolled back.");
-			}
+                throw new InvalidOperationException("Trying to close connection with " +
+                    "pending transaction. The transaction is rolled back.");
+            }
 
-			if (_transactionStack.Count > 0)
-			{
-				throw new InvalidOperationException("Trying to close connection with " +
-					"pending transaction. The transaction is rolled back.");
-			}
-		}
-		finally
-		{
-			CurrentContext.CloseConnection(this);
+            if (_transactionStack.Count > 0)
+            {
+                throw new InvalidOperationException("Trying to close connection with " +
+                    "pending transaction. The transaction is rolled back.");
+            }
+        }
+        finally
+        {
+            _currentContext.CloseConnection(this);
 
-			if (_transaction == null)
-			{
-				_connection.Close();
-			}
-		}
-	}
+            if (_transaction == null)
+            {
+                _connection.Close();
+            }
+        }
+    }
 
 	/// <inheritdoc/>
 	public void Dispose()
@@ -432,34 +432,34 @@ internal class WvDbConnection : IWvDbConnection
 	/// <summary>
 	/// Asynchronously closes the database connection and ensures all transactions are properly handled.
 	/// </summary>
-	internal async Task CloseAsync()
-	{
-		try
-		{
-			if (_transaction != null && _initialTransactionHolder)
-			{
-				await _transaction.RollbackAsync();
+    internal async Task CloseAsync()
+    {
+        try
+        {
+            if (_transaction != null && _initialTransactionHolder)
+            {
+                await _transaction.RollbackAsync();
 
-				throw new InvalidOperationException("Trying to close connection with " +
-					"pending transaction. The transaction is rolled back.");
-			}
+                throw new InvalidOperationException("Trying to close connection with " +
+                    "pending transaction. The transaction is rolled back.");
+            }
 
-			if (_transactionStack.Count > 0)
-			{
-				throw new InvalidOperationException("Trying to close connection with " +
-					"pending transaction. The transaction is rolled back.");
-			}
-		}
-		finally
-		{
-			CurrentContext.CloseConnection(this);
+            if (_transactionStack.Count > 0)
+            {
+                throw new InvalidOperationException("Trying to close connection with " +
+                    "pending transaction. The transaction is rolled back.");
+            }
+        }
+        finally
+        {
+            _currentContext.CloseConnection(this);
 
-			if (_transaction == null)
-			{
-				await _connection.CloseAsync();
-			}
-		}
-	}
+            if (_transaction == null)
+            {
+                await _connection.CloseAsync();
+            }
+        }
+    }
 
 	/// <inheritdoc/>
 	public async ValueTask DisposeAsync()
