@@ -65,6 +65,12 @@ public interface IWvDbConnection : IDisposable, IAsyncDisposable
     /// <param name="parameters">Optional parameters for the command.</param>
     /// <returns>A configured <see cref="NpgsqlCommand"/> instance.</returns>
 	public NpgsqlCommand CreateCommand(string sql, CommandType commandType = CommandType.Text, params NpgsqlParameter[] parameters);
+
+    /// <summary>
+    /// Gets the underlying <see cref="NpgsqlConnection"/> instance used by this connection.
+    /// </summary>
+    /// <returns>The underlying <see cref="NpgsqlConnection"/>.</returns>
+    public NpgsqlConnection GetUnderlyingConnection();
 }
 
 /// <summary>
@@ -113,6 +119,12 @@ internal class WvDbConnection : IWvDbConnection
     {
         _currentContext = connectionContext;
     }
+
+	/// <summary>
+	/// Gets the underlying <see cref="NpgsqlConnection"/> instance used by this connection.
+	/// </summary>
+	/// <returns>The underlying <see cref="NpgsqlConnection"/>.</returns>
+	public NpgsqlConnection GetUnderlyingConnection() => _connection;
 
 	/// <summary>
 	/// Asynchronously creates a new instance of WvDbConnection with a connection string.

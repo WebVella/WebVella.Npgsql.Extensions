@@ -8,8 +8,8 @@
 	  <OutputType>Library</OutputType>
 	  <PackageId>$(AssemblyName)</PackageId>
 	  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-	  <Description>Minimalistic open source library which extends npgsql with seamless and easy use of nested transactions and advisory locks.</Description>
-	  <Version>1.1.0</Version>
+	  <Description>Minimalistic open-source library that extends Npgsql, providing seamless support for nested transactions and advisory locks.</Description>
+	  <Version>1.1.1</Version>
 	  <Authors>WebVella</Authors>
 	  <Company>WebVella</Company>
 	  <Copyright>WebVella 2025</Copyright>
