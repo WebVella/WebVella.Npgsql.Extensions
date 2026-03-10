@@ -1,23 +1,23 @@
 ﻿namespace WebVella.Npgsql.Extensions;
 
 /// <summary>
-/// Configuration interface for the WvDbService.
+/// Defines the configuration required for <see cref="WvDbService"/>.
 /// </summary>
 public interface IWvDbServiceConfiguration
 {
-	/// <summary>
-	/// The connection string to the database.
-	/// </summary>
+    /// <summary>
+    /// Gets or sets the connection string to the database.
+    /// </summary>
 	string ConnectionString { get; set; }
 }
 
 /// <summary>
-/// Configuration for the WvDbService.
+/// Provides a concrete implementation of <see cref="IWvDbServiceConfiguration"/> for configuring <see cref="WvDbService"/>.
 /// </summary>
 public class WvDbServiceConfiguration : IWvDbServiceConfiguration
 {
-	/// <summary>
-	/// The connection string to the database.
-	/// </summary>
+    /// <summary>
+    /// Gets or sets the connection string to the database.
+    /// </summary>
 	public string ConnectionString { get; set; }
 }

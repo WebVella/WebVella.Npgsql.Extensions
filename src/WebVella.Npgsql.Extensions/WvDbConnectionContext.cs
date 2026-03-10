@@ -1,6 +1,6 @@
 ﻿namespace WebVella.Npgsql.Extensions;
 /// <summary>
-/// Represents a database connection context for managing connections and transactions.
+/// Represents a context for managing the lifecycle of database connections and transactions, including nested connections and transactional state.
 /// </summary>
 internal class WvDbConnectionContext : IDisposable, IAsyncDisposable
 {
@@ -13,20 +13,20 @@ internal class WvDbConnectionContext : IDisposable, IAsyncDisposable
 	internal NpgsqlTransaction _transaction;
 	internal string _connectionString;
 
-	/// <summary>
-	/// Initializes a new instance of the <see cref="WvDbConnectionContext"/> class.
-	/// </summary>
-	/// <param name="connectionString">The connection string for the database.</param>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WvDbConnectionContext"/> class with the specified connection string.
+    /// </summary>
+    /// <param name="connectionString">The connection string for the database.</param>
 	private WvDbConnectionContext(string connectionString)
 	{
 		_connectionString = connectionString;
 		_connectionStack = new Stack<WvDbConnection>();
 	}
 
-	/// <summary>
-	/// Creates a new database connection within the current context.
-	/// </summary>
-	/// <returns>A new instance of <see cref="WvDbConnection"/>.</returns>
+    /// <summary>
+    /// Creates a new <see cref="WvDbConnection"/> within the current context.
+    /// </summary>
+    /// <returns>A new <see cref="WvDbConnection"/> instance.</returns>
 	internal WvDbConnection CreateConnection()
 	{
 		WvDbConnection con = null;
@@ -41,10 +41,10 @@ internal class WvDbConnectionContext : IDisposable, IAsyncDisposable
 		return con;
 	}
 
-	/// <summary>
-	/// Asynchronously creates a new database connection within the current context.
-	/// </summary>
-	/// <returns>A new instance of <see cref="WvDbConnection"/>.</returns>
+    /// <summary>
+    /// Asynchronously creates a new <see cref="WvDbConnection"/> within the current context.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a new <see cref="WvDbConnection"/> instance.</returns>
 	internal async Task<WvDbConnection> CreateConnectionAsync()
 	{
 		WvDbConnection con = null;
@@ -59,12 +59,12 @@ internal class WvDbConnectionContext : IDisposable, IAsyncDisposable
 		return con;
 	}
 
-	/// <summary>
-	/// Closes the specified database connection.
-	/// </summary>
-	/// <param name="connection">The connection to close.</param>
-	/// <returns>True if all connections are closed; otherwise, false.</returns>
-	/// <exception cref="Exception">Thrown if the connection is not the most recently opened connection.</exception>
+    /// <summary>
+    /// Closes the specified database connection.
+    /// </summary>
+    /// <param name="connection">The connection to close.</param>
+    /// <returns><c>true</c> if all connections are closed; otherwise, <c>false</c>.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the connection is not the most recently opened connection.</exception>
 	internal bool CloseConnection(WvDbConnection connection)
 	{
 		if (connection != _connectionStack.Peek())
@@ -78,26 +78,26 @@ internal class WvDbConnectionContext : IDisposable, IAsyncDisposable
 		return _connectionStack.Count == 0;
 	}
 
-	/// <summary>
-	/// Enters a transactional state using the specified transaction.
-	/// </summary>
-	/// <param name="transaction">The transaction to use.</param>
+    /// <summary>
+    /// Enters a transactional state using the specified transaction.
+    /// </summary>
+    /// <param name="transaction">The <see cref="NpgsqlTransaction"/> to use.</param>
 	internal void EnterTransactionalState(NpgsqlTransaction transaction)
 	{
 		this._transaction = transaction;
 	}
 
-	/// <summary>
-	/// Leaves the transactional state, clearing the current transaction.
-	/// </summary>
+    /// <summary>
+    /// Leaves the transactional state and clears the current transaction.
+    /// </summary>
 	internal void LeaveTransactionalState()
 	{
 		this._transaction = null;
 	}
 
-	/// <summary>
-	/// Creates a new connection context with the specified connection string.
-	/// </summary>
+    /// <summary>
+    /// Creates a new <see cref="WvDbConnectionContext"/> with the specified connection string.
+    /// </summary>
 	/// <param name="connectionString">The connection string for the database.</param>
 	/// <returns>A new instance of <see cref="WvDbConnectionContext"/>.</returns>
 	/// <exception cref="Exception">Thrown if the context cannot be created or retrieved.</exception>

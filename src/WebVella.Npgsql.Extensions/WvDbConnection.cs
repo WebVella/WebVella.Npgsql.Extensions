@@ -1,50 +1,50 @@
 ﻿namespace WebVella.Npgsql.Extensions;
 
 /// <summary>
-/// Interface for database connection operations, including transaction management and advisory locks.
+/// Defines methods for managing PostgreSQL database connections, transactions, savepoints, and advisory locks.
 /// </summary>
 public interface IWvDbConnection : IDisposable, IAsyncDisposable
 {
-	/// <summary>
-	/// Begins a new transaction or creates a savepoint if a transaction already exists.
-	/// </summary>
+    /// <summary>
+    /// Begins a new transaction, or creates a savepoint if a transaction already exists.
+    /// </summary>
 	internal void BeginTransaction();
 
-	/// <summary>
-	/// Asynchronously begins a new transaction or creates a savepoint if a transaction already exists.
-	/// </summary>
+    /// <summary>
+    /// Asynchronously begins a new transaction, or creates a savepoint if a transaction already exists.
+    /// </summary>
 	internal Task BeginTransactionAsync();
 
-	/// <summary>
-	/// Commits the current transaction or releases the savepoint if nested.
-	/// </summary>
+    /// <summary>
+    /// Commits the current transaction, or releases the savepoint if this is a nested transaction.
+    /// </summary>
 	internal void CommitTransaction();
 
-	/// <summary>
-	/// Asynchronously commits the current transaction or releases the savepoint if nested.
-	/// </summary>
+    /// <summary>
+    /// Asynchronously commits the current transaction, or releases the savepoint if this is a nested transaction.
+    /// </summary>
 	internal Task CommitTransactionAsync();
 
-	/// <summary>
-	/// Rolls back the current transaction or reverts to the previous savepoint if nested.
-	/// </summary>
+    /// <summary>
+    /// Rolls back the current transaction, or reverts to the previous savepoint if this is a nested transaction.
+    /// </summary>
 	internal void RollbackTransaction();
 
-	/// <summary>
-	/// Asynchronously rolls back the current transaction or reverts to the previous savepoint if nested.
-	/// </summary>
+    /// <summary>
+    /// Asynchronously rolls back the current transaction, or reverts to the previous savepoint if this is a nested transaction.
+    /// </summary>
 	internal Task RollbackTransactionAsync();
 
-	/// <summary>
-	/// Acquires a PostgreSQL advisory lock using the specified key.
-	/// </summary>
-	/// <param name="key">The key for the advisory lock.</param>
+    /// <summary>
+    /// Acquires a PostgreSQL advisory lock using the specified key.
+    /// </summary>
+    /// <param name="key">The advisory lock key.</param>
 	internal void AcquireAdvisoryLock(long key);
 
-	/// <summary>
-	/// Asynchronously acquires a PostgreSQL advisory lock using the specified key.
-	/// </summary>
-	/// <param name="key">The key for the advisory lock.</param>
+    /// <summary>
+    /// Asynchronously acquires a PostgreSQL advisory lock using the specified key.
+    /// </summary>
+    /// <param name="key">The advisory lock key.</param>
 	internal Task AcquireAdvisoryLockAsync(long key);
 
 	/// <summary>
@@ -57,18 +57,18 @@ public interface IWvDbConnection : IDisposable, IAsyncDisposable
 	/// </summary>
 	internal Task ReleaseAdvisoryLockAsync();
 
-	/// <summary>
-	/// Creates a new NpgsqlCommand with the specified SQL, command type, and parameters.
-	/// </summary>
-	/// <param name="sql">The SQL query or command text.</param>
-	/// <param name="commandType">The type of the command (e.g., Text, StoredProcedure).</param>
-	/// <param name="parameters">Optional parameters for the command.</param>
-	/// <returns>A configured NpgsqlCommand instance.</returns>
+    /// <summary>
+    /// Creates a new <see cref="NpgsqlCommand"/> with the specified SQL, command type, and parameters.
+    /// </summary>
+    /// <param name="sql">The SQL query or command text.</param>
+    /// <param name="commandType">The type of the command (e.g., <see cref="CommandType.Text"/>, <see cref="CommandType.StoredProcedure"/>).</param>
+    /// <param name="parameters">Optional parameters for the command.</param>
+    /// <returns>A configured <see cref="NpgsqlCommand"/> instance.</returns>
 	public NpgsqlCommand CreateCommand(string sql, CommandType commandType = CommandType.Text, params NpgsqlParameter[] parameters);
 }
 
 /// <summary>
-/// Implementation of IWvDbConnection for managing PostgreSQL database connections, transactions, and advisory locks.
+/// Provides an implementation of <see cref="IWvDbConnection"/> for managing PostgreSQL database connections, transactions, savepoints, and advisory locks.
 /// </summary>
 internal class WvDbConnection : IWvDbConnection
 {

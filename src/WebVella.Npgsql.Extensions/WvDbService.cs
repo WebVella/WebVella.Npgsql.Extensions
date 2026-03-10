@@ -1,66 +1,66 @@
 ﻿namespace WebVella.Npgsql.Extensions;
 
 /// <summary>
-/// Interface for database service operations.
+/// Defines methods for creating and managing database connections, transaction scopes, and advisory lock scopes.
 /// </summary>
 public interface IWvDbService
 {
-	/// <summary>
-	/// Creates a new database connection.
-	/// </summary>
-	/// <returns>An instance of <see cref="IWvDbConnection"/>.</returns>
+    /// <summary>
+    /// Creates a new database connection.
+    /// </summary>
+    /// <returns>A new <see cref="IWvDbConnection"/> instance.</returns>
 	IWvDbConnection CreateConnection();
 
-	/// <summary>
-	/// Creates a new transaction scope.
-	/// </summary>
-	/// <param name="lockKey">Optional lock key for advisory locking.</param>
-	/// <returns>An instance of <see cref="IWvDbTransactionScope"/>.</returns>
+    /// <summary>
+    /// Creates a new transaction scope for database operations.
+    /// </summary>
+    /// <param name="lockKey">An optional advisory lock key.</param>
+    /// <returns>A new <see cref="IWvDbTransactionScope"/> instance.</returns>
 	IWvDbTransactionScope CreateTransactionScope(long? lockKey = null);
 
-	/// <summary>
-	/// Creates a new advisory lock scope.
-	/// </summary>
-	/// <param name="lockKey">The lock key for the advisory lock.</param>
-	/// <returns>An instance of <see cref="IWvDbAdvisoryLockScope"/>.</returns>
+    /// <summary>
+    /// Creates a new advisory lock scope for database operations.
+    /// </summary>
+    /// <param name="lockKey">The advisory lock key.</param>
+    /// <returns>A new <see cref="IWvDbAdvisoryLockScope"/> instance.</returns>
 	IWvDbAdvisoryLockScope CreateAdvisoryLockScope(long lockKey);
 
-	/// <summary>
-	/// Asynchronously creates a new database connection.
-	/// </summary>
-	/// <returns>An instance of <see cref="IWvDbConnection"/>.</returns>
+    /// <summary>
+    /// Asynchronously creates a new database connection.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a new <see cref="IWvDbConnection"/> instance.</returns>
 	Task<IWvDbConnection> CreateConnectionAsync();
 
-	/// <summary>
-	/// Asynchronously creates a new transaction scope.
-	/// </summary>
-	/// <param name="lockKey">Optional lock key for advisory locking.</param>
-	/// <returns>An instance of <see cref="IWvDbTransactionScope"/>.</returns>
+    /// <summary>
+    /// Asynchronously creates a new transaction scope for database operations.
+    /// </summary>
+    /// <param name="lockKey">An optional advisory lock key.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a new <see cref="IWvDbTransactionScope"/> instance.</returns>
 	Task<IWvDbTransactionScope> CreateTransactionScopeAsync(long? lockKey = null);
 
-	/// <summary>
-	/// Asynchronously creates a new advisory lock scope.
-	/// </summary>
-	/// <param name="lockKey">The lock key for the advisory lock.</param>
-	/// <returns>An instance of <see cref="IWvDbAdvisoryLockScope"/>.</returns>
+    /// <summary>
+    /// Asynchronously creates a new advisory lock scope for database operations.
+    /// </summary>
+    /// <param name="lockKey">The advisory lock key.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a new <see cref="IWvDbAdvisoryLockScope"/> instance.</returns>
 	Task<IWvDbAdvisoryLockScope> CreateAdvisoryLockScopeAsync(long lockKey);
 }
 
 /// <summary>
-/// Implementation of the database service.
+/// Provides an implementation of <see cref="IWvDbService"/> for managing PostgreSQL database connections, transactions, and advisory locks.
 /// </summary>
 public class WvDbService : IWvDbService
 {
-	/// <summary>
-	/// Gets the connection string for the database.
-	/// </summary>
+    /// <summary>
+    /// Gets the connection string used by this service.
+    /// </summary>
 	public string ConnectionString { get; private set; }
 
-	/// <summary>
-	/// Initializes a new instance of the <see cref="WvDbService"/> class using a configuration object.
-	/// </summary>
-	/// <param name="config">The configuration object containing the connection string.</param>
-	/// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is null.</exception>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WvDbService"/> class using the specified configuration object.
+    /// </summary>
+    /// <param name="config">The configuration object containing the connection string.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <c>null</c>.</exception>
 	public WvDbService(IWvDbServiceConfiguration config)
 	{
 		if (config == null)
@@ -69,11 +69,11 @@ public class WvDbService : IWvDbService
 		ConnectionString = config.ConnectionString;
 	}
 
-	/// <summary>
-	/// Initializes a new instance of the <see cref="WvDbService"/> class using a connection string.
-	/// </summary>
-	/// <param name="connectionString">The connection string for the database.</param>
-	/// <exception cref="ArgumentNullException">Thrown when <paramref name="connectionString"/> is null or empty.</exception>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WvDbService"/> class using the specified connection string.
+    /// </summary>
+    /// <param name="connectionString">The connection string for the database.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connectionString"/> is <c>null</c> or empty.</exception>
 	public WvDbService(string connectionString)
 	{
 		if (string.IsNullOrWhiteSpace(connectionString))
@@ -82,10 +82,10 @@ public class WvDbService : IWvDbService
 		ConnectionString = connectionString;
 	}
 
-	/// <summary>
-	/// Creates a new database connection.
-	/// </summary>
-	/// <returns>An instance of <see cref="IWvDbConnection"/>.</returns>
+    /// <summary>
+    /// Creates a new database connection.
+    /// </summary>
+    /// <returns>A new <see cref="IWvDbConnection"/> instance.</returns>
 	public IWvDbConnection CreateConnection()
 	{
 		var currentCtx = WvDbConnectionContext.GetCurrentContext();
